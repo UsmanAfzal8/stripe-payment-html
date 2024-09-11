@@ -40,45 +40,39 @@
 
       document.querySelector(".pay-now").addEventListener("click", async () => {
         try {
-            const { error, paymentIntent } = await stripe.confirmPayment({
+          const { error, paymentIntent } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-              // Remove the top-level navigation URL to avoid sandbox issues
               return_url: "", // No redirection
             },
             redirect: "if_required", // Avoid any redirection
           });
 
           if (error) {
-            // Update status on payment failure
             window.StripePaymentStatus.status = "failed";
             window.StripePaymentStatus.message = error.message;
-            console.log("its in the if block");
-            console.log(JSON.stringify(window.StripePaymentStatus));
+            console.log("Payment failed:", error.message);
           } else {
-            // Update status on payment success
             window.StripePaymentStatus.status = "success";
             window.StripePaymentStatus.message = "Payment is successfully done";
-            console.log("its in the success block");
-            console.log(JSON.stringify(window.StripePaymentStatus));
+            console.log("Payment success:", JSON.stringify(window.StripePaymentStatus));
           }
+
+          // Send the payment status to the parent window (Flutter app)
+          window.parent.postMessage(JSON.stringify(window.StripePaymentStatus), "*");
+
         } catch (err) {
-          // Update status on error
           window.StripePaymentStatus.status = "failed";
           window.StripePaymentStatus.message = err.message;
-          console.log("its in the catch block");
-          console.log(JSON.stringify(window.StripePaymentStatus));
+          console.log("Error during payment:", err.message);
+
+          // Send the failure message to the parent window (Flutter app)
+          window.parent.postMessage(JSON.stringify(window.StripePaymentStatus), "*");
         }
       });
     } else {
-    console.log("its in the elsee block");
       console.error("No client_secret found in URL");
     }
-
-    // Expose the payment status to Flutter using this method
-    window.getPaymentStatus = function() {
-      return JSON.stringify(window.StripePaymentStatus);
-    };
   </script>
 </body>
 </html>
